@@ -13,6 +13,11 @@ function Wall.new(x, y, w, h)
     table.insert(self.segments, { a = { x = x + w, y = y + h }, b = { x = x, y = y + h } })
     table.insert(self.segments, { a = { x = x, y = y + h }, b = { x = x, y = y } })
 
+    self.points = {}
+    for _, segment in pairs(self.segments) do
+        table.insert(self.points, segment.a)
+    end
+
     return self
 end
 
@@ -30,8 +35,8 @@ end
 
 function Wall:drawPoints()
     love.graphics.setColor(255, 255, 100)
-    for _, s in pairs(self.segments) do
-        love.graphics.points(s.a.x, s.a.y)
+    for _, p in pairs(self.points) do
+        love.graphics.points(p.x, p.y)
     end
 end
 
@@ -51,6 +56,32 @@ function Vision.new(walls)
     return self
 end
 
+function Vision:update()
+    for _, p in pairs(self:getPoints()) do print(p.x, p.y) end
+end
+
+function Vision:getPoints()
+    local points = {}    
+    for _, wall in pairs(self.walls) do
+        for _, point in pairs(wall.points) do
+            table.insert(points, point)
+        end
+    end
+    -- make unique
+    local unique = {points[1]}
+    for _, point in pairs(points) do
+        local found = false
+        for _, u in pairs(unique) do
+            if point.x == u.x and point.y == u.y then 
+                found = true
+                break 
+            end
+        end
+        if not found then table.insert(unique, point) end
+    end
+    return unique
+end
+
 function Vision:setOrigin(x, y)
     self.origin.x, self.origin.y = x, y
 end
@@ -62,7 +93,7 @@ function Vision:drawOrigin()
 end
 
 function Vision:drawWalls()
-    for _, wall in pairs(self.walls) do wall:draw() end
+    for _, wall in pairs(self.walls) do wall:drawPoints() end
 end
 --
 
