@@ -7,6 +7,7 @@ walls = {
 
 function love.load()
     vision = Vision.new(walls)
+    vision:setOrigin(100, 100)
 end
 
 function love.update(dt)
@@ -14,7 +15,6 @@ function love.update(dt)
 end
 
 function love.draw()
-    love.graphics.setColor(255, 255, 100)
-    love.graphics.circle('fill', vision.origin.x, vision.origin.y, 3)
-    vision:draw()
+    vision:drawOrigin()
+    vision:drawWalls()
 end

@@ -42,16 +42,28 @@ function Vision.new(walls)
     local self = setmetatable({}, Vision)
 
     self.walls = {}
-    for _, wall in pairs(walls) do table.insert(self.walls, Wall.new(wall[1], wall[2], wall[3], wall[4])) end
+    for _, wall in pairs(walls) do 
+        table.insert(self.walls, Wall.new(unpack(wall))) 
+    end
 
     self.origin = { x = love.graphics:getWidth() / 2, y = love.graphics:getHeight() / 2 }
 
     return self
 end
 
+function Vision:setOrigin(x, y)
+    self.origin.x, self.origin.y = x, y
+end
+
 -- DEBUG FUNCTIONS - DELETE
+function Vision:drawOrigin()
+    love.graphics.setColor(255, 255, 100)
+    love.graphics.circle('fill', self.origin.x, self.origin.y, 3)
+end
+
 function Vision:drawWalls()
     for _, wall in pairs(self.walls) do wall:draw() end
 end
+--
 
 return Vision
