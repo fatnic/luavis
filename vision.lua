@@ -47,6 +47,7 @@ function Vision.new(walls)
     local self = setmetatable({}, Vision)
 
     self.walls = {}
+    table.insert(self.walls, Wall.new(0, 0, love.graphics:getWidth(), love.graphics:getHeight()))
     for _, wall in pairs(walls) do 
         table.insert(self.walls, Wall.new(unpack(wall))) 
     end
@@ -57,7 +58,8 @@ function Vision.new(walls)
 end
 
 function Vision:update()
-    for _, p in pairs(self:getPoints()) do print(p.x, p.y) end
+    local points = self:getPoints()
+    local angles = self:calcAngles(points)
 end
 
 function Vision:getPoints()
@@ -80,6 +82,15 @@ function Vision:getPoints()
         if not found then table.insert(unique, point) end
     end
     return unique
+end
+
+function Vision:calcAngles(points)
+    local angles = {}
+    local precision = 0.00001
+    for _, point in pairs(points) do
+        local angle = math.atan2(point.y - self.origin.y, point.x - self.origin.x)
+        print(angle)
+    end
 end
 
 function Vision:setOrigin(x, y)
