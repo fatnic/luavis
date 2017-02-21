@@ -1,3 +1,13 @@
+local function normaliseRadian(rad)
+    local result = rad % (2 * math.pi)
+    if result < 0 then result = result + (2 * math.pi) end
+    return result
+end
+
+local function rad2deg(rad)
+    return rad * (180 / math.pi)
+end
+
 local Wall = {}
 Wall.__index = Wall
 
@@ -60,16 +70,18 @@ end
 function Vision:update()
     local points = self:getPoints()
     local angles = self:calcAngles(points)
+    local intersects = self:calcIntersects(angles)
 end
 
 function Vision:getPoints()
+    -- TODO: Remove this first loop
     local points = {}    
     for _, wall in pairs(self.walls) do
         for _, point in pairs(wall.points) do
             table.insert(points, point)
         end
     end
-    -- make unique
+
     local unique = {points[1]}
     for _, point in pairs(points) do
         local found = false
@@ -89,8 +101,19 @@ function Vision:calcAngles(points)
     local precision = 0.00001
     for _, point in pairs(points) do
         local angle = math.atan2(point.y - self.origin.y, point.x - self.origin.x)
-        print(angle)
+        table.insert(angles, normaliseRadian(angle) - precision)
+        table.insert(angles, normaliseRadian(angle))
+        table.insert(angles, normaliseRadian(angle) + precision)
     end
+    return angles
+end
+
+function Vision:calcIntersects(angles)
+    local intersects = {}
+    for _, angle in pairs(angles) do
+        local delta = { x = math.cos(angle), y = math.sin(angle) }
+    end
+    return intersects
 end
 
 function Vision:setOrigin(x, y)
