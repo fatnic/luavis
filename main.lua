@@ -7,13 +7,14 @@ walls = {
 
 function love.load()
     vision = Vision.new(walls)
-    vision:update()
 end
 
 function love.update(dt)
+    vision:setOrigin(love.mouse:getX(), love.mouse:getY())
 end
 
 function love.draw()
-    -- vision:drawOrigin()
+    vision:update()
+    vision:drawOrigin()
     vision:drawWalls()
 end
