@@ -26,81 +26,50 @@ end
 
 tools.doLinesIntersect = function( ray, segment )
 
-        local a, b = ray.a, ray.b
-        local c, d = segment.a, segment.b
-        -- parameter conversion
-        local L1 = {X1=a.x,Y1=a.y,X2=b.x,Y2=b.y}
-        local L2 = {X1=c.x,Y1=c.y,X2=d.x,Y2=d.y}
-        
-        -- Denominator for ua and ub are the same, so store this calculation
-        local d = (L2.Y2 - L2.Y1) * (L1.X2 - L1.X1) - (L2.X2 - L2.X1) * (L1.Y2 - L1.Y1)
-        
-        -- Make sure there is not a division by zero - this also indicates that the lines are parallel.
-        -- If n_a and n_b were both equal to zero the lines would be on top of each
-        -- other (coincidental).  This check is not done because it is not
-        -- necessary for this implementation (the parallel check accounts for this).
-        if (d == 0) then return false end
-        
-        -- n_a and n_b are calculated as seperate values for readability
-        local n_a = (L2.X2 - L2.X1) * (L1.Y1 - L2.Y1) - (L2.Y2 - L2.Y1) * (L1.X1 - L2.X1)
-        local n_b = (L1.X2 - L1.X1) * (L1.Y1 - L2.Y1) - (L1.Y2 - L1.Y1) * (L1.X1 - L2.X1)
-        
-        -- Calculate the intermediate fractional point that the lines potentially intersect.
-        local ua = n_a / d
-        local ub = n_b / d
-        
-        -- The fractional point will be between 0 and 1 inclusive if the lines
-        -- intersect.  If the fractional calculation is larger than 1 or smaller
-        -- than 0 the lines would need to be longer to intersect.
-        if (ua >= 0 and ua <= 1 and ub >= 0 and ub <= 1) then
-                local x = L1.X1 + (ua * (L1.X2 - L1.X1))
-                local y = L1.Y1 + (ua * (L1.Y2 - L1.Y1))
-                return true, {x=x, y=y}
-        end
-        
-        return false
+    local a, b = ray.a, ray.b
+    local c, d = segment.a, segment.b
+
+    local L1 = {X1=a.x,Y1=a.y,X2=b.x,Y2=b.y}
+    local L2 = {X1=c.x,Y1=c.y,X2=d.x,Y2=d.y}
+
+    local d = (L2.Y2 - L2.Y1) * (L1.X2 - L1.X1) - (L2.X2 - L2.X1) * (L1.Y2 - L1.Y1)
+
+    if (d == 0) then return false end
+
+    local n_a = (L2.X2 - L2.X1) * (L1.Y1 - L2.Y1) - (L2.Y2 - L2.Y1) * (L1.X1 - L2.X1)
+    local n_b = (L1.X2 - L1.X1) * (L1.Y1 - L2.Y1) - (L1.Y2 - L1.Y1) * (L1.X1 - L2.X1)
+
+    local ua = n_a / d
+    local ub = n_b / d
+
+    if (ua >= 0 and ua <= 1 and ub >= 0 and ub <= 1) then
+        local x = L1.X1 + (ua * (L1.X2 - L1.X1))
+        local y = L1.Y1 + (ua * (L1.Y2 - L1.Y1))
+        return true, {x=x, y=y}
+    end
+
+    return false
 end
 
-local Wall = {}
-Wall.__index = Wall
-
+Wall = {}
 function Wall.new(x, y, w, h)
-    local self = setmetatable({}, Wall)
+    wall = {}
 
-    self.position = {  x = x, y = y }
-    self.dimensions = { w = w, h = h }
+    wall.position = { x = x, y = y }
+    wall.dimensions = { w = w, h = h }
 
-    self.segments = {}
-    table.insert(self.segments, { a = { x = x, y = y }, b = { x = x + w, y = y } })
-    table.insert(self.segments, { a = { x = x + w, y = y }, b = { x = x + w, y = y + h } })
-    table.insert(self.segments, { a = { x = x + w, y = y + h }, b = { x = x, y = y + h } })
-    table.insert(self.segments, { a = { x = x, y = y + h }, b = { x = x, y = y } })
+    wall.segments = {}
+    table.insert(wall.segments, { a = { x = x, y = y }, b = { x = x + w, y = y } })
+    table.insert(wall.segments, { a = { x = x + w, y = y }, b = { x = x + w, y = y + h } })
+    table.insert(wall.segments, { a = { x = x + w, y = y + h }, b = { x = x, y = y + h } })
+    table.insert(wall.segments, { a = { x = x, y = y + h }, b = { x = x, y = y } })
 
-    self.points = {}
-    for _, segment in pairs(self.segments) do
-        table.insert(self.points, segment.a)
+    wall.points = {}
+    for _, segment in pairs(wall.segments) do
+        table.insert(wall.points, segment.a)
     end
 
-    return self
-end
-
-function Wall:draw()
-    love.graphics.setColor(0, 155, 0)
-    love.graphics.rectangle('fill', self.position.x, self.position.y, self.dimensions.w, self.dimensions.h)
-end
-
-function Wall:drawSegments()
-    love.graphics.setColor(0, 0, 155)
-    for _, s in pairs(self.segments) do
-        love.graphics.line(s.a.x, s.a.y, s.b.x, s.b.y)
-    end
-end
-
-function Wall:drawPoints()
-    love.graphics.setColor(255, 255, 100)
-    for _, p in pairs(self.points) do
-        love.graphics.points(p.x, p.y)
-    end
+    return wall
 end
 
 local Vision = {}
@@ -121,87 +90,86 @@ function Vision.new(walls)
 end
 
 function Vision:update()
-    local points = self:getPoints()
-    local angles = self:calcAngles(points)
+    local angles = self:calcAngles()
     local rays = self:calcRays(angles)
-    rays = self:calcIntersects(rays)
-    table.sort(rays, function(a, b) return a.angle < b.angle end)
-    local poly = {}
-    for _, r in pairs(rays) do
-        table.insert(poly, r.intersect.x)
-        table.insert(poly, r.intersect.y)
+    for _, ray in pairs(rays) do
+        ray.intersect = self:calcNearestIntersect(ray)
     end
-    love.graphics.polygon('line', poly)
+    table.sort(rays, function(a, b) return a.angle < b.angle end)
+
+    local polygon = {}
+    for _, ray in ipairs(rays) do
+        table.insert(polygon, ray.intersect.x)
+        table.insert(polygon, ray.intersect.y)
+        print(ray.intersect.x, ray.intersect.y)
+    end
+
+    love.graphics.setColor(255, 255, 255, 30)
+    love.graphics.polygon('fill', polygon)
+
 end
 
-function Vision:getPoints()
-    -- TODO: Remove this first loop
-    local points = {}    
+function Vision:calcAngles()
+    local rawAngles = {}
+    local precision = 0.0000001
+
     for _, wall in pairs(self.walls) do
         for _, point in pairs(wall.points) do
-            table.insert(points, point)
+            local angle = math.atan2(point.y - self.origin.y, point.x - self.origin.x)
+            table.insert(rawAngles, tools.normaliseRadian(angle - precision))
+            table.insert(rawAngles, tools.normaliseRadian(angle))
+            table.insert(rawAngles, tools.normaliseRadian(angle + precision))
         end
     end
 
-    local unique = { points[1] }
-    for _, point in pairs(points) do
+    local uniqueAngles = { rawAngles[1] }
+    for _, a in pairs(rawAngles) do
         local found = false
-        for _, u in pairs(unique) do
-            if point.x == u.x and point.y == u.y then 
+        for _, u in pairs(uniqueAngles) do
+            if u == a then
                 found = true
-                break 
+                break
             end
         end
-        if not found then table.insert(unique, point) end
+        if not found then table.insert(uniqueAngles, a) end
     end
-    return unique
-end
 
-function Vision:calcAngles(points)
-    local angles = {}
-    local precision = 0.0000001
-    for _, point in pairs(points) do
-        local angle = math.atan2(point.y - self.origin.y, point.x - self.origin.x)
-        table.insert(angles, tools.normaliseRadian(angle) - precision)
-        table.insert(angles, tools.normaliseRadian(angle))
-        table.insert(angles, tools.normaliseRadian(angle) + precision)
-    end
-    return angles
+    return uniqueAngles
 end
 
 function Vision:calcRays(angles)
     local rays = {}
-    local maxLine = tools.vectorDistance({ x = 0, y = 0 }, { x = love.graphics.getWidth(), y = love.graphics.getHeight() })
+    local maxRay = tools.vectorDistance({ x = 0, y = 0 }, { x = love.graphics:getWidth(), y = love.graphics:getHeight() })
     for _, angle in pairs(angles) do
-        local r = { angle = angle, a = self.origin }
+        local ray = { a = self.origin, angle = angle }
         local delta = { x = math.cos(angle), y = math.sin(angle) }
-        local destination = tools.vectorMag(delta, maxLine)
-        r.b = { x = self.origin.x + destination.x, y = self.origin.y + destination.y }
-        table.insert(rays, r)
+        local magDelta = tools.vectorMag(delta, maxRay)
+        ray.b = { x = self.origin.x + magDelta.x, y = self.origin.y + magDelta.y }
+        table.insert(rays, ray)
     end
     return rays
 end
 
-function Vision:calcIntersects(rays)
-    local rt = {} 
-    for _, ray in pairs(rays) do
-        local closestIntersect = nil
-        for _, wall in pairs(self.walls) do
-            for _, segment in pairs(wall.segments) do
-                local found, intersect = tools.doLinesIntersect(ray, segment)
-                if found and not closestIntersect then 
-                    closestIntersect = intersect 
-                    break
-                end
-                if found and tools.vectorDistance(self.origin, intersect) < tools.vectorDistance(self.origin, closestIntersect) then
+function Vision:calcNearestIntersect(ray)
+    local closestIntersect = ray.b
+    closestIntersect.distance = tools.vectorDistance(ray.a, ray.b)
+
+    for _, wall in pairs(self.walls) do
+        for _, segment in pairs(wall.segments) do
+            local found, intersect = tools.doLinesIntersect(ray, segment) 
+            if found then
+                local distance = tools.vectorDistance(ray.a, intersect)
+                if distance < closestIntersect.distance then
                     closestIntersect = intersect
+                    closestIntersect.distance = distance
                 end
             end
         end
-        ray.intersect = closestIntersect
-        if ray.intersect then table.insert(rt, ray) end
     end
-    return rt
+    -- debug
+    -- love.graphics.setColor(100, 140, 155)
+    -- love.graphics.circle('line', closestIntersect.x, closestIntersect.y, 3)
+    return closestIntersect
 end
 
 function Vision:setOrigin(x, y)
@@ -216,8 +184,14 @@ end
 
 function Vision:drawWalls()
     for _, wall in pairs(self.walls) do 
-        wall:drawSegments()
-        wall:drawPoints() 
+        love.graphics.setColor(0, 0, 155)
+        for _, segment in pairs(wall.segments) do
+            love.graphics.line(segment.a.x, segment.a.y, segment.b.x, segment.b.y)
+        end
+        love.graphics.setColor(150, 150, 0)
+        for _, point in pairs(wall.points) do
+            love.graphics.circle('fill', point.x, point.y, 1)
+        end
     end
 end
 --
