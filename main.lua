@@ -1,9 +1,10 @@
 Vision = require 'vision'
 
 walls = {
-    {50,50,200,40}, 
-    {220,520,200,40},
-    {500, 200, 75, 75},
+    -- { 50, 50, 50, 50}, 
+    -- {250,250,200,200}, 
+    -- {220,520,200,40},
+    -- {500, 200, 75, 75},
 }
 
 function love.load()
@@ -20,5 +21,5 @@ function love.draw()
 end
 
 function love.mousemoved(x, y)
-    vision:setOrigin(x, y)
+    -- vision:setOrigin(x, y)
 end
